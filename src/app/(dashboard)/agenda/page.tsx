@@ -9,6 +9,7 @@ import {
 } from "@/lib/data/mock-agenda";
 import {
   TurnoAgendaItem,
+  CirugiaItem,
   VistaAgenda,
   PestanaAgendaPrincipal,
 } from "@/types/agenda";
@@ -17,13 +18,19 @@ import { AgendaSidebarFiltros } from "@/components/agenda/agenda-sidebar-filtros
 import { AgendaGrillaTurnos } from "@/components/agenda/agenda-grilla-turnos";
 import { TurnoDetalleDrawer } from "@/components/agenda/turno-detalle-drawer";
 import { CirugiasPanel } from "@/components/agenda/cirugias-panel";
+import { NuevoTurnoAgendaModal } from "@/components/agenda/nuevo-turno-agenda-modal";
+import { NuevaCirugiaModal } from "@/components/agenda/nueva-cirugia-modal";
 
 export default function AgendaPage() {
+  const [turnos, setTurnos] = useState<TurnoAgendaItem[]>([...MOCK_TURNOS_AGENDA]);
+  const [cirugias, setCirugias] = useState<CirugiaItem[]>([...MOCK_CIRUGIAS]);
   const [pestanaPrincipal, setPestanaPrincipal] =
     useState<PestanaAgendaPrincipal>("turnos");
   const [vista, setVista] = useState<VistaAgenda>("dia");
   const [fechaTexto] = useState<string>("Lunes, 12 de mayo de 2025");
   const [selectedDay, setSelectedDay] = useState<number>(12);
+  const [isNuevoTurnoModalOpen, setIsNuevoTurnoModalOpen] = useState<boolean>(false);
+  const [isNuevaCirugiaModalOpen, setIsNuevaCirugiaModalOpen] = useState<boolean>(false);
 
   // Filtros seleccionados
   const [selectedProfesionalesIds, setSelectedProfesionalesIds] = useState<
@@ -78,9 +85,25 @@ export default function AgendaPage() {
   );
 
   // Filtrado de turnos
-  const turnosFiltrados = MOCK_TURNOS_AGENDA.filter((t) =>
+  const turnosFiltrados = turnos.filter((t) =>
     selectedProfesionalesIds.includes(t.profesionalId)
   );
+
+  const handleAddTurno = (nuevo: TurnoAgendaItem) => {
+    setTurnos((prev) => [nuevo, ...prev]);
+  };
+
+  const handleAddCirugia = (nueva: CirugiaItem) => {
+    setCirugias((prev) => [nueva, ...prev]);
+  };
+
+  const handleCancelarTurno = (turno: TurnoAgendaItem) => {
+    setTurnos((prev) =>
+      prev.map((t) => (t.id === turno.id ? { ...t, estado: "cancelado" } : t))
+    );
+    setIsDrawerOpen(false);
+    setSelectedTurno(null);
+  };
 
   return (
     <div className="space-y-6 animate-in fade-in duration-200">
@@ -91,8 +114,8 @@ export default function AgendaPage() {
         fechaTexto={fechaTexto}
         vista={vista}
         onVistaChange={setVista}
-        onNuevoTurno={() => alert("Modal para agendar nuevo turno")}
-        onNuevaCirugia={() => alert("Modal para programar nueva cirugía")}
+        onNuevoTurno={() => setIsNuevoTurnoModalOpen(true)}
+        onNuevaCirugia={() => setIsNuevaCirugiaModalOpen(true)}
       />
 
       {/* 2. Vista de Turnos (Sidebar de Filtros + Grilla Central) */}
@@ -124,9 +147,9 @@ export default function AgendaPage() {
       {/* 3. Submódulo de Quirófanos y Cirugías */}
       {pestanaPrincipal === "cirugias" && (
         <CirugiasPanel
-          cirugias={MOCK_CIRUGIAS}
+          cirugias={cirugias}
           fechaTexto={fechaTexto}
-          onNuevaCirugia={() => alert("Modal para programar nueva cirugía")}
+          onNuevaCirugia={() => setIsNuevaCirugiaModalOpen(true)}
         />
       )}
 
@@ -138,13 +161,22 @@ export default function AgendaPage() {
           setIsDrawerOpen(false);
           setSelectedTurno(null);
         }}
-        onEditar={(turno) => alert(`Editando turno de ${turno.pacienteNombre}`)}
-        onReprogramar={(turno) =>
-          alert(`Reprogramando turno de ${turno.pacienteNombre}`)
-        }
-        onCancelar={(turno) =>
-          alert(`Turno de ${turno.pacienteNombre} cancelado`)
-        }
+        onEditar={() => setIsDrawerOpen(false)}
+        onReprogramar={() => setIsDrawerOpen(false)}
+        onCancelar={handleCancelarTurno}
+      />
+
+      {/* Modales de Alta */}
+      <NuevoTurnoAgendaModal
+        isOpen={isNuevoTurnoModalOpen}
+        onClose={() => setIsNuevoTurnoModalOpen(false)}
+        onSave={handleAddTurno}
+      />
+
+      <NuevaCirugiaModal
+        isOpen={isNuevaCirugiaModalOpen}
+        onClose={() => setIsNuevaCirugiaModalOpen(false)}
+        onSave={handleAddCirugia}
       />
     </div>
   );

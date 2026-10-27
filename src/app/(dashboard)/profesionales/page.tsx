@@ -1,8 +1,10 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { MOCK_PROFESIONALES } from "@/lib/data/mock-profesionales";
+import { ProfesionalDetalle } from "@/types/profesionales";
+import { NuevoProfesionalModal } from "@/components/profesionales/nuevo-profesional-modal";
 import {
   Stethoscope,
   Search,
@@ -12,11 +14,39 @@ import {
   Building2,
 } from "lucide-react";
 
+const STORAGE_KEY_MEDICOS = "sunnix_profesionales_list";
+
 export default function ProfesionalesListPage() {
+  const [profesionales, setProfesionales] = useState<ProfesionalDetalle[]>(() => [...MOCK_PROFESIONALES]);
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [filterEspecialidad, setFilterEspecialidad] = useState<string>("todas");
+  const [isNuevoModalOpen, setIsNuevoModalOpen] = useState<boolean>(false);
 
-  const filtered = MOCK_PROFESIONALES.filter((med) => {
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY_MEDICOS);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setProfesionales(parsed);
+        }
+      }
+    } catch {
+      // Ignore
+    }
+  }, []);
+
+  const handleCrearProfesional = (nuevo: ProfesionalDetalle) => {
+    const updated = [nuevo, ...profesionales];
+    setProfesionales(updated);
+    try {
+      localStorage.setItem(STORAGE_KEY_MEDICOS, JSON.stringify(updated));
+    } catch {
+      // Ignore
+    }
+  };
+
+  const filtered = profesionales.filter((med) => {
     const matchesSearch =
       med.nombreCompleto.toLowerCase().includes(searchTerm.toLowerCase()) ||
       med.matricula.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -51,7 +81,8 @@ export default function ProfesionalesListPage() {
 
         <button
           type="button"
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold bg-sky-600 text-white hover:bg-sky-700 shadow-sm transition-all shrink-0"
+          onClick={() => setIsNuevoModalOpen(true)}
+          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold bg-sky-600 text-white hover:bg-sky-700 shadow-sm transition-all shrink-0 cursor-pointer"
         >
           <Plus className="w-4 h-4" />
           <span>Nuevo Profesional</span>
@@ -200,6 +231,13 @@ export default function ProfesionalesListPage() {
           </table>
         </div>
       </div>
+
+      {/* Modal de Nuevo Profesional */}
+      <NuevoProfesionalModal
+        isOpen={isNuevoModalOpen}
+        onClose={() => setIsNuevoModalOpen(false)}
+        onSave={handleCrearProfesional}
+      />
     </div>
   );
 }

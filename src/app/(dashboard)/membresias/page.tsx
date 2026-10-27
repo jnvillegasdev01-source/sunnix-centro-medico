@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { MOCK_PACIENTES } from "@/lib/data/mock-pacientes";
 import { PacienteDetalle } from "@/types/pacientes";
+import { NuevaMembresiaModal } from "@/components/membresias/nueva-membresia-modal";
 import {
   Award,
   Users,
@@ -18,12 +19,40 @@ import {
   UserCheck,
 } from "lucide-react";
 
+const STORAGE_KEY = "sunnix_pacientes_list";
+
 export default function MembresiasPage() {
+  const [pacientes, setPacientes] = useState<PacienteDetalle[]>(() => [...MOCK_PACIENTES]);
   const [busqueda, setBusqueda] = useState<string>("");
   const [filtroTipo, setFiltroTipo] = useState<string>("todos");
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setPacientes(parsed);
+        }
+      }
+    } catch {
+      // Ignore
+    }
+  }, []);
+
+  const handleCrearMembresia = (nuevoPaciente: PacienteDetalle) => {
+    const updated = [nuevoPaciente, ...pacientes];
+    setPacientes(updated);
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+    } catch {
+      // Ignore
+    }
+  };
 
   // Pacientes con membresía activa en el sistema
-  const pacientesConMembresia: readonly PacienteDetalle[] = MOCK_PACIENTES.filter(
+  const pacientesConMembresia = pacientes.filter(
     (p) => Boolean(p.membresia)
   );
 
@@ -43,7 +72,7 @@ export default function MembresiasPage() {
   });
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-in fade-in duration-200">
       {/* 1. Cabecera principal */}
       <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
@@ -63,8 +92,8 @@ export default function MembresiasPage() {
         <div className="flex items-center gap-3">
           <button
             type="button"
-            onClick={() => alert("Modal para dar de alta nueva membresía de salud")}
-            className="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold shadow-xs hover:shadow-sm transition-all"
+            onClick={() => setIsModalOpen(true)}
+            className="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold shadow-xs hover:shadow-sm transition-all cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             <span>Nueva Membresía</span>
@@ -322,6 +351,13 @@ export default function MembresiasPage() {
           </div>
         </div>
       </div>
+
+      {/* Modal de Nueva Membresía */}
+      <NuevaMembresiaModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSave={handleCrearMembresia}
+      />
     </div>
   );
 }

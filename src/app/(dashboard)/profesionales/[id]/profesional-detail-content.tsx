@@ -18,6 +18,7 @@ import {
   FileText,
   StickyNote,
   Sparkles,
+  CheckCircle2,
 } from "lucide-react";
 
 interface ProfesionalDetailContentProps {
@@ -57,6 +58,7 @@ export function ProfesionalDetailContent({ id }: ProfesionalDetailContentProps) 
 
   const [profesional] = useState<ProfesionalDetalle>(initialDoctor);
   const [activeTab, setActiveTab] = useState<TabKey>("general");
+  const [editBanner, setEditBanner] = useState<boolean>(false);
 
   return (
     <div className="space-y-6 animate-in fade-in duration-200">
@@ -74,11 +76,29 @@ export function ProfesionalDetailContent({ id }: ProfesionalDetailContentProps) 
         </span>
       </div>
 
+      {editBanner && (
+        <div className="p-4 bg-sky-50 border border-sky-200 rounded-2xl flex items-center justify-between text-xs font-medium text-sky-900 animate-in fade-in">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-sky-600 shrink-0" />
+            <span>
+              Ficha del profesional {profesional.nombreCompleto} abierta para edición y actualización de matrícula/contrato.
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setEditBanner(false)}
+            className="text-xs font-semibold text-sky-700 hover:text-sky-900 px-2 py-1 rounded-lg hover:bg-sky-100 transition-colors cursor-pointer"
+          >
+            Cerrar
+          </button>
+        </div>
+      )}
+
       {/* 1. Cabecera con datos y 3 KPICards */}
       <ProfesionalHeader
         profesional={profesional}
         onVerAlquiler={() => setActiveTab("alquiler")}
-        onEditar={() => alert("Modal de edición de profesional")}
+        onEditar={() => setEditBanner(true)}
       />
 
       {/* 2. Navegación por pestañas (Tabs) */}

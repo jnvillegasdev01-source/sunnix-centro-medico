@@ -5,11 +5,14 @@ import { ProveedorItem, OrdenCompraItem, RecepcionMercaderiaItem } from "@/types
 import {
   MOCK_PROVEEDORES,
   MOCK_COMPRAS_KPIS,
+  MOCK_ORDENES_COMPRA,
 } from "@/lib/data/mock-stock";
 import { ComprasKpisHeader } from "@/components/compras/compras-kpis-header";
 import { ProveedoresDataTable } from "@/components/compras/proveedores-data-table";
 import { ProveedorDrawerDetalle } from "@/components/compras/proveedor-drawer-detalle";
 import { OrdenesRecepcionPanel } from "@/components/compras/ordenes-recepcion-panel";
+import { NuevoProveedorModal } from "@/components/compras/nuevo-proveedor-modal";
+import { NuevaOCModal } from "@/components/compras/nueva-oc-modal";
 import {
   Building2,
   RefreshCw,
@@ -21,8 +24,11 @@ import {
 } from "lucide-react";
 
 export default function ComprasPage() {
-  const [proveedores] = useState<readonly ProveedorItem[]>(
+  const [proveedores, setProveedores] = useState<readonly ProveedorItem[]>(
     () => [...MOCK_PROVEEDORES]
+  );
+  const [ordenesCompra, setOrdenesCompra] = useState<readonly OrdenCompraItem[]>(
+    () => [...MOCK_ORDENES_COMPRA]
   );
   const [busqueda, setBusqueda] = useState<string>("");
   const [rubroSeleccionado, setRubroSeleccionado] = useState<string>("todos");
@@ -30,6 +36,9 @@ export default function ComprasPage() {
 
   const [selectedProveedor, setSelectedProveedor] = useState<ProveedorItem | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState<boolean>(false);
+  const [isNuevoProveedorOpen, setIsNuevoProveedorOpen] = useState<boolean>(false);
+  const [isNuevaOCOpen, setIsNuevaOCOpen] = useState<boolean>(false);
+  const [ocPreselectedProveedor, setOcPreselectedProveedor] = useState<ProveedorItem | null>(null);
 
   // Filtrado de proveedores
   const proveedoresFiltrados = useMemo(() => {
@@ -75,15 +84,79 @@ export default function ComprasPage() {
   };
 
   const handleCrearOC = (prov: ProveedorItem) => {
-    alert(`Abriendo confección de Orden de Compra para ${prov.razonSocial}.`);
+    setOcPreselectedProveedor(prov);
+    setIsNuevaOCOpen(true);
+  };
+
+  const handleSaveNuevoProveedor = (nuevo: ProveedorItem) => {
+    setProveedores((prev) => [nuevo, ...prev]);
+  };
+
+  const handleSaveNuevaOC = (nuevaOC: OrdenCompraItem) => {
+    setOrdenesCompra((prev) => [nuevaOC, ...prev]);
+  };
+
+  const handleExportarProveedores = () => {
+    const headers = "ID,RazonSocial,CUIT,Rubro,Telefono,Email,Direccion,CondicionPagoDias,Estado\n";
+    const rows = proveedoresFiltrados
+      .map(
+        (p) =>
+          `"${p.id}","${p.razonSocial}","${p.cuit}","${p.rubro}","${p.telefono}","${p.email}","${p.direccion}","${p.condicionPagoDias}","${p.activo ? "Activo" : "Inactivo"}"`
+      )
+      .join("\n");
+    const blob = new Blob([headers + rows], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `Catalogo_Proveedores_Sunnix_${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   const handleVerOC = (oc: OrdenCompraItem) => {
-    alert(`Visualizando detalles de ${oc.numeroOrden} - ${oc.proveedorNombre}.`);
+    const content = `SUNNIX CENTRO MÉDICO - ORDEN DE COMPRA OFICIAL
+==================================================
+Número de Orden: ${oc.numeroOrden}
+Proveedor Adjudicado: ${oc.proveedorNombre}
+Fecha de Emisión: ${oc.fecha}
+Estado Administrativo: ${oc.estado.toUpperCase()}
+Monto Estimado Total: $ ${oc.montoTotal.toLocaleString("es-AR")} ARS
+Ítems / Renglones de Pedido: ${oc.itemsCount ?? 1}
+==================================================
+Autorizado por Dirección Médica y Compras Sunnix.`;
+    const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `Orden_Compra_${oc.numeroOrden}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   const handleVerRecepcion = (rc: RecepcionMercaderiaItem) => {
-    alert(`Visualizando remito de recepción ${rc.id.toUpperCase()} de la orden ${rc.ordenCompraNumero}.`);
+    const content = `SUNNIX CENTRO MÉDICO - REMITO DE RECEPCIÓN
+==================================================
+Identificador Remito: ${rc.id.toUpperCase()}
+Orden de Compra Vinculada: ${rc.ordenCompraNumero}
+Proveedor: ${rc.proveedorNombre}
+Fecha de Ingreso: ${rc.fecha}
+Estado de Recepción: ${rc.estado === "completa" ? "RECEPCIÓN CONFORME Y COMPLETA" : "RECEPCIÓN PARCIAL"}
+Bultos / Ítems Auditados: ${rc.itemsContados} unidades
+==================================================
+Ingreso registrado en farmacia y depósito central Sunnix.`;
+    const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `Remito_Recepcion_${rc.id}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -177,8 +250,8 @@ export default function ComprasPage() {
             {/* Exportar */}
             <button
               type="button"
-              onClick={() => alert("Exportando catálogo de proveedores homologados...")}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition-colors"
+              onClick={handleExportarProveedores}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition-colors cursor-pointer"
             >
               <Download className="w-3.5 h-3.5" />
               <span>Exportar</span>
@@ -187,8 +260,11 @@ export default function ComprasPage() {
             {/* Nueva Orden de Compra */}
             <button
               type="button"
-              onClick={() => alert("Abriendo generador de nueva Orden de Compra.")}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-700 rounded-xl text-xs font-semibold transition-colors"
+              onClick={() => {
+                setOcPreselectedProveedor(null);
+                setIsNuevaOCOpen(true);
+              }}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-700 rounded-xl text-xs font-semibold transition-colors cursor-pointer"
             >
               <ShoppingCart className="w-3.5 h-3.5" />
               <span>+ Nueva OC</span>
@@ -197,8 +273,8 @@ export default function ComprasPage() {
             {/* Nuevo Proveedor */}
             <button
               type="button"
-              onClick={() => alert("Abriendo formulario de alta de nuevo proveedor.")}
-              className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white rounded-xl text-xs font-semibold shadow-xs transition-colors"
+              onClick={() => setIsNuevoProveedorOpen(true)}
+              className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white rounded-xl text-xs font-semibold shadow-xs transition-colors cursor-pointer"
             >
               <Plus className="w-4 h-4 stroke-[2.5]" />
               <span>+ Nuevo proveedor</span>
@@ -229,6 +305,7 @@ export default function ComprasPage() {
         </div>
 
         <OrdenesRecepcionPanel
+          ordenes={ordenesCompra}
           onVerOC={handleVerOC}
           onVerRecepcion={handleVerRecepcion}
         />
@@ -240,6 +317,22 @@ export default function ComprasPage() {
         isOpen={isDrawerOpen}
         onClose={handleCloseDrawer}
         onCrearOC={handleCrearOC}
+      />
+
+      {/* Modal Alta de Proveedor */}
+      <NuevoProveedorModal
+        isOpen={isNuevoProveedorOpen}
+        onClose={() => setIsNuevoProveedorOpen(false)}
+        onSave={handleSaveNuevoProveedor}
+      />
+
+      {/* Modal Emisión de Orden de Compra */}
+      <NuevaOCModal
+        isOpen={isNuevaOCOpen}
+        onClose={() => setIsNuevaOCOpen(false)}
+        onSave={handleSaveNuevaOC}
+        proveedores={proveedores}
+        preselectedProveedor={ocPreselectedProveedor}
       />
     </div>
   );

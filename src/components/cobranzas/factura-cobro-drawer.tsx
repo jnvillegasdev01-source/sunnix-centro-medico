@@ -12,6 +12,8 @@ import {
   Percent,
   CreditCard,
   FileText,
+  CheckCircle2,
+  AlertCircle,
 } from "lucide-react";
 
 interface FacturaCobroDrawerProps {
@@ -33,6 +35,8 @@ export function FacturaCobroDrawer({
 }: FacturaCobroDrawerProps) {
   const [activeTab, setActiveTab] = useState<"liquidacion" | "detalle" | "mora">("liquidacion");
   const [montoParcialInput, setMontoParcialInput] = useState<string>("25000");
+  const [feedbackMsg, setFeedbackMsg] = useState<string | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   if (!isOpen || !factura) {
     return null;
@@ -40,19 +44,26 @@ export function FacturaCobroDrawer({
 
   const handleCobroTotal = () => {
     onRegistrarCobro?.(factura, factura.totalACobrar);
-    alert(`Cobro registrado con éxito por $${factura.totalACobrar.toLocaleString("es-AR")} para ${factura.pacienteNombre}.`);
-    onClose();
+    setFeedbackMsg(`Cobro total registrado por $${factura.totalACobrar.toLocaleString("es-AR")} para ${factura.pacienteNombre}.`);
+    setTimeout(() => {
+      setFeedbackMsg(null);
+      onClose();
+    }, 800);
   };
 
   const handleAplicarPagoParcial = () => {
     const monto = Number(montoParcialInput);
     if (isNaN(monto) || monto <= 0 || monto >= factura.totalACobrar) {
-      alert("Por favor ingrese un monto parcial válido (mayor a $0 y menor al total).");
+      setErrorMsg("Ingrese un monto parcial válido (mayor a $0 y menor al total).");
+      setTimeout(() => setErrorMsg(null), 3500);
       return;
     }
     onPagoParcial?.(factura, monto);
-    alert(`Pago parcial registrado por $${monto.toLocaleString("es-AR")}. Saldo pendiente: $${(factura.totalACobrar - monto).toLocaleString("es-AR")}.`);
-    onClose();
+    setFeedbackMsg(`Pago parcial registrado por $${monto.toLocaleString("es-AR")}. Saldo: $${(factura.totalACobrar - monto).toLocaleString("es-AR")}.`);
+    setTimeout(() => {
+      setFeedbackMsg(null);
+      onClose();
+    }, 800);
   };
 
   return (
@@ -319,6 +330,20 @@ export function FacturaCobroDrawer({
                 </div>
               </div>
             )}
+
+            {/* Mensajes de Feedback y Error */}
+            {feedbackMsg && (
+              <div className="mt-4 p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-xs font-semibold flex items-center gap-2 animate-in fade-in">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>{feedbackMsg}</span>
+              </div>
+            )}
+            {errorMsg && (
+              <div className="mt-4 p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-800 text-xs font-semibold flex items-center gap-2 animate-in fade-in">
+                <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                <span>{errorMsg}</span>
+              </div>
+            )}
           </div>
 
           {/* Footer de Acciones */}
@@ -327,10 +352,13 @@ export function FacturaCobroDrawer({
               type="button"
               onClick={() => {
                 onNotaCredito?.(factura);
-                alert(`Nota de crédito generada para anular ${factura.numeroFactura}.`);
-                onClose();
+                setFeedbackMsg(`Nota de crédito generada para anular ${factura.numeroFactura}.`);
+                setTimeout(() => {
+                  setFeedbackMsg(null);
+                  onClose();
+                }, 800);
               }}
-              className="px-3 py-2 rounded-xl text-xs font-semibold border border-slate-300 text-slate-700 hover:bg-slate-100 transition-colors"
+              className="px-3 py-2 rounded-xl text-xs font-semibold border border-slate-300 text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
             >
               Nota de crédito
             </button>

@@ -1,8 +1,13 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { PacienteDetalle } from "@/types/pacientes";
+import {
+  PacienteDetalle,
+  FamiliarDependiente,
+  TurnoPaciente,
+  MembresiaDetalle,
+} from "@/types/pacientes";
 import { PACIENTE_ANA_TORRES, MOCK_PACIENTES } from "@/lib/data/mock-pacientes";
 import { PacienteHeader } from "@/components/pacientes/paciente-header";
 import { AlertaMedicaCards } from "@/components/pacientes/alerta-medica-cards";
@@ -10,6 +15,8 @@ import { DatosPersonalesCard } from "@/components/pacientes/datos-personales-car
 import { MembresiaFamiliaresCard } from "@/components/pacientes/membresia-familiares-card";
 import { TurnosWidget } from "@/components/pacientes/turnos-widget";
 import { EditarPacienteModal } from "@/components/pacientes/editar-paciente-modal";
+import { AgregarFamiliarModal } from "@/components/pacientes/agregar-familiar-modal";
+import { NuevoTurnoModal } from "@/components/pacientes/nuevo-turno-modal";
 import {
   ChevronLeft,
   Info,
@@ -64,6 +71,117 @@ export function PacienteDetailContent({ id }: PacienteDetailContentProps) {
   const [paciente, setPaciente] = useState<PacienteDetalle>(initialPatient);
   const [activeTab, setActiveTab] = useState<TabKey>("general");
   const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false);
+  const [isFamiliarModalOpen, setIsFamiliarModalOpen] = useState<boolean>(false);
+  const [isTurnoModalOpen, setIsTurnoModalOpen] = useState<boolean>(false);
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem("sunnix_pacientes_list");
+      if (stored) {
+        const list = JSON.parse(stored);
+        if (Array.isArray(list)) {
+          const found = list.find((p: PacienteDetalle) => p.id === id);
+          if (found) {
+            setPaciente(found);
+          }
+        }
+      }
+    } catch {
+      // Ignore localStorage errors
+    }
+  }, [id]);
+
+  const syncPatientUpdate = (updated: PacienteDetalle) => {
+    setPaciente(updated);
+    try {
+      const stored = localStorage.getItem("sunnix_pacientes_list");
+      if (stored) {
+        const list = JSON.parse(stored);
+        if (Array.isArray(list)) {
+          const index = list.findIndex((p: PacienteDetalle) => p.id === updated.id);
+          if (index !== -1) {
+            list[index] = updated;
+          } else {
+            list.unshift(updated);
+          }
+          localStorage.setItem("sunnix_pacientes_list", JSON.stringify(list));
+        }
+      }
+    } catch {
+      // Ignore
+    }
+  };
+
+  const handleSaveFamiliar = (nuevoFamiliar: FamiliarDependiente) => {
+    if (!paciente.membresia) return;
+    const updatedMembresia: MembresiaDetalle = {
+      ...paciente.membresia,
+      familiares: [...paciente.membresia.familiares, nuevoFamiliar],
+    };
+    syncPatientUpdate({
+      ...paciente,
+      membresia: updatedMembresia,
+    });
+  };
+
+  const handleSaveTurno = (nuevoTurno: TurnoPaciente) => {
+    const updatedTurnos = [nuevoTurno, ...(paciente.prosimosTurnos ?? [])];
+    syncPatientUpdate({
+      ...paciente,
+      prosimosTurnos: updatedTurnos,
+    });
+  };
+
+  const handleAfiliar = () => {
+    const nuevaMembresia: MembresiaDetalle = {
+      id: `mem-${paciente.id}`,
+      codigo: `FAM-${Math.floor(100000 + Math.random() * 900000)}`,
+      nombrePlan: "Plan Familiar",
+      tipo: "familiar",
+      estado: "activa",
+      fechaVencimiento: "2026-12-31",
+      beneficios: [
+        "Descuentos en farmacia red Sunnix",
+        "Sin copago en consultas ambulatorias",
+        "1 chequeo preventivo anual por integrante",
+      ],
+      familiares: [
+        {
+          id: `fam-${paciente.id}-1`,
+          nombreCompleto: paciente.nombreCompleto,
+          dni: paciente.dni,
+          parentesco: "Titular",
+          estado: "Activo",
+        },
+      ],
+    };
+    syncPatientUpdate({
+      ...paciente,
+      membresia: nuevaMembresia,
+    });
+  };
+
+  const handleDownloadEstudio = (titulo: string) => {
+    const content = `SUNNIX CENTRO MÉDICO - INFORME CLÍNICO OFICIAL
+=====================================================
+Paciente: ${paciente.nombreCompleto}
+DNI: ${paciente.dni} | Edad: ${paciente.edad} años
+Obra Social: ${paciente.obraSocial} (Afiliado: ${paciente.numeroAfiliado})
+Estudio: ${titulo}
+Fecha de emisión: ${new Date().toLocaleDateString("es-AR")}
+Firma Digital: Dr. Carlos Benítez (M.N. 98.412) - Validez Oficial Sunnix Salud
+=====================================================`;
+
+    const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${titulo.replace(/[^a-zA-Z0-9]/g, "_")}.txt`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <div className="space-y-6 animate-in fade-in duration-200">
@@ -85,6 +203,7 @@ export function PacienteDetailContent({ id }: PacienteDetailContentProps) {
       <PacienteHeader
         paciente={paciente}
         onEditar={() => setIsEditModalOpen(true)}
+        onNuevoTurno={() => setIsTurnoModalOpen(true)}
       />
 
       {/* 2. Cuatro Tarjetas de Alerta y Resumen */}
@@ -128,14 +247,22 @@ export function PacienteDetailContent({ id }: PacienteDetailContentProps) {
               prosimosTurnos={paciente.prosimosTurnos}
               historialTurnos={paciente.historialTurnos}
             />
-            <MembresiaFamiliaresCard membresia={paciente.membresia} />
+            <MembresiaFamiliaresCard
+              membresia={paciente.membresia}
+              onAgregarFamiliar={() => setIsFamiliarModalOpen(true)}
+              onAfiliar={handleAfiliar}
+            />
           </div>
         </div>
       )}
 
       {activeTab === "membresia" && (
         <div className="space-y-6">
-          <MembresiaFamiliaresCard membresia={paciente.membresia} />
+          <MembresiaFamiliaresCard
+            membresia={paciente.membresia}
+            onAgregarFamiliar={() => setIsFamiliarModalOpen(true)}
+            onAfiliar={handleAfiliar}
+          />
         </div>
       )}
 
@@ -228,7 +355,12 @@ export function PacienteDetailContent({ id }: PacienteDetailContentProps) {
               </div>
               <button
                 type="button"
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-sky-600 bg-sky-50 rounded-lg hover:bg-sky-100 transition-colors"
+                onClick={() =>
+                  handleDownloadEstudio(
+                    "Laboratorio Bioquímico Completo (Perfil Tiroideo, Hemograma)"
+                  )
+                }
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-sky-600 bg-sky-50 rounded-lg hover:bg-sky-100 transition-colors cursor-pointer"
               >
                 <Download className="w-3.5 h-3.5" />
                 <span>Descargar PDF</span>
@@ -245,7 +377,10 @@ export function PacienteDetailContent({ id }: PacienteDetailContentProps) {
               </div>
               <button
                 type="button"
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-sky-600 bg-sky-50 rounded-lg hover:bg-sky-100 transition-colors"
+                onClick={() =>
+                  handleDownloadEstudio("Electrocardiograma con Informe")
+                }
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-sky-600 bg-sky-50 rounded-lg hover:bg-sky-100 transition-colors cursor-pointer"
               >
                 <Download className="w-3.5 h-3.5" />
                 <span>Descargar PDF</span>
@@ -375,7 +510,23 @@ export function PacienteDetailContent({ id }: PacienteDetailContentProps) {
         paciente={paciente}
         isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}
-        onSave={(updated) => setPaciente(updated)}
+        onSave={(updated) => syncPatientUpdate(updated)}
+      />
+
+      {/* Modal de Agregar Familiar a Membresía */}
+      <AgregarFamiliarModal
+        isOpen={isFamiliarModalOpen}
+        onClose={() => setIsFamiliarModalOpen(false)}
+        onSave={handleSaveFamiliar}
+        cantidadActual={paciente.membresia?.familiares.length ?? 0}
+      />
+
+      {/* Modal de Agendar Nuevo Turno */}
+      <NuevoTurnoModal
+        pacienteNombre={paciente.nombreCompleto}
+        isOpen={isTurnoModalOpen}
+        onClose={() => setIsTurnoModalOpen(false)}
+        onSave={handleSaveTurno}
       />
     </div>
   );

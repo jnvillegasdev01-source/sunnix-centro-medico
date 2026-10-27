@@ -225,15 +225,22 @@ export function ProveedoresDataTable({
                         <button
                           type="button"
                           onClick={(e) =>
-                            handleAction(
-                              () =>
-                                alert(
-                                  `Descargando constancia fiscal de ${prov.razonSocial}`
-                                ),
-                              e
-                            )
+                            handleAction(() => {
+                              const content = `ADMINISTRACIÓN FEDERAL DE INGRESOS PÚBLICOS (AFIP / ARCA)\nCONSTANCIA DE INSCRIPCIÓN Y HOMOLOGACIÓN\n==================================================\nRazón Social: ${prov.razonSocial}\nCUIT: ${prov.cuit}\nRubro: ${prov.rubro}\nCondición de Pago: ${prov.condicionPagoDias} días\nEstado: PROVEEDOR HOMOLOGADO SUNNIX\nFecha: ${new Date().toLocaleDateString("es-AR")}\n==================================================`;
+                              const blob = new Blob([content], {
+                                type: "text/plain;charset=utf-8",
+                              });
+                              const url = URL.createObjectURL(blob);
+                              const a = document.createElement("a");
+                              a.href = url;
+                              a.download = `Constancia_Fiscal_${prov.cuit}.txt`;
+                              document.body.appendChild(a);
+                              a.click();
+                              document.body.removeChild(a);
+                              URL.revokeObjectURL(url);
+                            }, e)
                           }
-                          className="w-full px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 flex items-center gap-2 transition-colors"
+                          className="w-full px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 flex items-center gap-2 transition-colors cursor-pointer"
                         >
                           <FileText className="w-3.5 h-3.5 text-slate-400" />
                           <span>Constancia CUIT</span>

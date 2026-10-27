@@ -110,7 +110,14 @@ export function DocumentosTable({
                     download
                     onClick={(e) => {
                       e.preventDefault();
-                      alert(`Descargando ${doc.nombreArchivo}...`);
+                      const content = `SUNNIX CENTRO MÉDICO - LEGAJO PROFESIONAL\nDocumento: ${doc.nombreArchivo}\nTipo: ${doc.tipo}\nFecha de homologación: ${doc.fechaSubida}\nEstado: ${doc.estado ?? "Vigente"}\n`;
+                      const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement("a");
+                      a.href = url;
+                      a.download = doc.nombreArchivo.endsWith(".pdf") ? doc.nombreArchivo.replace(".pdf", ".txt") : `${doc.nombreArchivo}.txt`;
+                      a.click();
+                      URL.revokeObjectURL(url);
                     }}
                     className="inline-flex items-center gap-1 text-xs font-semibold text-sky-600 hover:text-sky-700 bg-sky-50 px-2.5 py-1 rounded-lg border border-sky-100 hover:bg-sky-100 transition-colors"
                   >

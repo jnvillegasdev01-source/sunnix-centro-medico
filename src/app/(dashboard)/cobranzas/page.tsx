@@ -76,13 +76,27 @@ export default function CobranzasPage() {
     );
   };
 
+  const handleExportarCobranzas = () => {
+    const headers = "ID,Numero,Paciente,PacienteId,Vencimiento,TotalACobrar,Estado\n";
+    const rows = facturas.map((f) => `"${f.id}","${f.numeroFactura}","${f.pacienteNombre}","${f.pacienteId}","${f.fechaVencimiento}","${f.totalACobrar}","${f.estado}"`).join("\n");
+    const blob = new Blob([headers + rows], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `Cuentas_Por_Cobrar_Sunnix_${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   return (
-    <div className="space-y-6 pb-12">
+    <div className="space-y-6 pb-12 animate-in fade-in duration-200">
       {/* Header del Módulo con Breadcrumb y Badges */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 text-xs text-slate-500 mb-1">
-            <span>Finanzas</span>
+            <span>Cobranzas</span>
             <span>/</span>
             <span className="font-semibold text-slate-800">Cuentas por Cobrar & Mora</span>
           </div>
@@ -107,8 +121,8 @@ export default function CobranzasPage() {
 
           <button
             type="button"
-            onClick={() => alert("Exportando libro de cobranzas pendientes a Excel / PDF...")}
-            className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-colors"
+            onClick={handleExportarCobranzas}
+            className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
             title="Exportar cuentas por cobrar"
           >
             <Download className="w-4 h-4" />

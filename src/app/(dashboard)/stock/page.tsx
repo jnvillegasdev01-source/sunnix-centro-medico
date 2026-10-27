@@ -8,6 +8,7 @@ import { StockFiltrosBar } from "@/components/stock/stock-filtros-bar";
 import { InsumosDataTable } from "@/components/stock/insumos-data-table";
 import { InsumoDrawerDetalle } from "@/components/stock/insumo-drawer-detalle";
 import { StockMetricasPanel } from "@/components/stock/stock-metricas-panel";
+import { NuevoInsumoModal } from "@/components/stock/nuevo-insumo-modal";
 import {
   Boxes,
   RefreshCw,
@@ -43,6 +44,7 @@ export default function StockPage() {
   // Drawer
   const [selectedInsumo, setSelectedInsumo] = useState<InsumoItem | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState<boolean>(false);
+  const [isNuevoInsumoModalOpen, setIsNuevoInsumoModalOpen] = useState<boolean>(false);
 
   // Filtrado reactivo de inventario
   const insumosFiltrados = useMemo(() => {
@@ -130,12 +132,10 @@ export default function StockPage() {
           : i
       )
     );
-    alert(`Se registraron +20 unidades en ${item.nombre}.`);
   };
 
   const handleRegistrarSalida = (item: InsumoItem) => {
     if (item.stockActual <= 0) {
-      alert("Stock insuficiente para realizar el despacho.");
       return;
     }
     setInsumos((prev) =>
@@ -154,11 +154,28 @@ export default function StockPage() {
         };
       })
     );
-    alert(`Se despacharon -5 unidades de ${item.nombre}.`);
   };
 
   const handleCrearOC = (item: InsumoItem) => {
-    alert(`Orden de compra generada para ${item.nombre} con el proveedor ${item.proveedorHabitualNombre}.`);
+    handleRegistrarEntrada(item);
+  };
+
+  const handleSaveNuevoInsumo = (nuevo: InsumoItem) => {
+    setInsumos((prev) => [nuevo, ...prev]);
+  };
+
+  const handleExportarStock = () => {
+    const headers = "ID,Nombre,Codigo,Categoria,StockActual,StockMinimo,Ubicacion,Proveedor\n";
+    const rows = insumosFiltrados.map((i) => `"${i.id}","${i.nombre}","${i.codigo}","${i.categoria}","${i.stockActual}","${i.stockMinimo}","${i.ubicacion}","${i.proveedorHabitualNombre}"`).join("\n");
+    const blob = new Blob([headers + rows], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `Stock_General_Sunnix_${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -295,15 +312,13 @@ export default function StockPage() {
           onUbicacionChange={setUbicacionSeleccionada}
           soloStockBajo={soloStockBajo}
           onToggleSoloStockBajo={() => setSoloStockBajo((prev) => !prev)}
-          onExportar={() =>
-            alert("Exportando planilla de stock general a Excel / CSV...")
-          }
-          onNuevoInsumo={() =>
-            alert("Abriendo formulario de alta de nuevo insumo médico.")
-          }
-          onRegistrarMovimiento={() =>
-            alert("Abriendo modal de registro de movimiento de entrada/salida.")
-          }
+          onExportar={handleExportarStock}
+          onNuevoInsumo={() => setIsNuevoInsumoModalOpen(true)}
+          onRegistrarMovimiento={() => {
+            if (insumosFiltrados.length > 0) {
+              handleRegistrarEntrada(insumosFiltrados[0]);
+            }
+          }}
         />
       </section>
 
@@ -342,6 +357,13 @@ export default function StockPage() {
         onClose={handleCloseDrawer}
         onCrearOC={handleCrearOC}
         onRegistrarMovimiento={handleRegistrarEntrada}
+      />
+
+      {/* Modal de Alta de Insumo */}
+      <NuevoInsumoModal
+        isOpen={isNuevoInsumoModalOpen}
+        onClose={() => setIsNuevoInsumoModalOpen(false)}
+        onSave={handleSaveNuevoInsumo}
       />
     </div>
   );

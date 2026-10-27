@@ -114,8 +114,22 @@ export default function AsistenciaPage() {
     setTabSeleccionada("turnos");
   };
 
+  const handleExportarAsistencia = () => {
+    const headers = "ID,Hora,Paciente,DNI,Profesional,Especialidad,Estado\n";
+    const rows = turnosFiltrados.map((t) => `"${t.id}","${t.hora}","${t.pacienteNombre}","${t.pacienteDni}","${t.profesionalNombre}","${t.especialidad}","${t.estado}"`).join("\n");
+    const blob = new Blob([headers + rows], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `Asistencia_Diaria_Sunnix_${fecha}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   return (
-    <div className="space-y-6 pb-12">
+    <div className="space-y-6 pb-12 animate-in fade-in duration-200">
       {/* Header del Módulo con Breadcrumb y Badges */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
@@ -141,7 +155,7 @@ export default function AsistenciaPage() {
           <button
             type="button"
             onClick={handleResetFiltros}
-            className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-colors"
+            className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
             title="Restablecer filtros"
           >
             <RefreshCw className="w-4 h-4" />
@@ -165,7 +179,7 @@ export default function AsistenciaPage() {
           onEspecialidadChange={setEspecialidadSeleccionada}
           tabSeleccionada={tabSeleccionada}
           onTabChange={setTabSeleccionada}
-          onExportar={() => alert("Exportando reporte de asistencia diaria a formato Excel / PDF...")}
+          onExportar={handleExportarAsistencia}
         />
       </section>
 
@@ -202,11 +216,11 @@ export default function AsistenciaPage() {
         onClose={handleCloseDrawer}
         onReprogramar={(id) => {
           handleUpdateEstado(id, "reprogramado", "Reprogramado para 16/05");
-          alert("Turno reprogramado exitosamente para el viernes 16/05.");
+          handleCloseDrawer();
         }}
         onJustificar={(id) => {
           handleUpdateEstado(id, "asistio", "Inasistencia justificada por certificado");
-          alert("Inasistencia justificada correctamente.");
+          handleCloseDrawer();
         }}
       />
     </div>

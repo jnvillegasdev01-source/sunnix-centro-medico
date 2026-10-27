@@ -30,6 +30,7 @@ export function ProveedorDrawerDetalle({
   onCrearOC,
 }: ProveedorDrawerDetalleProps) {
   const [activeTab, setActiveTab] = useState<"comercial" | "ordenes" | "pagos">("comercial");
+  const [mensajeFeedback, setMensajeFeedback] = useState<string | null>(null);
 
   if (!isOpen || !proveedor) {
     return null;
@@ -269,14 +270,24 @@ export function ProveedorDrawerDetalle({
                 </div>
               </div>
             )}
+
+            {mensajeFeedback && (
+              <div className="mt-4 p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-xs font-semibold flex items-center gap-2 animate-in fade-in">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>{mensajeFeedback}</span>
+              </div>
+            )}
           </div>
 
           {/* Footer */}
           <div className="p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-end gap-2.5">
             <button
               type="button"
-              onClick={() => alert(`Editando datos de ${proveedor.razonSocial}`)}
-              className="px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-700 hover:bg-slate-200 transition-colors"
+              onClick={() => {
+                setMensajeFeedback(`Ficha de ${proveedor.razonSocial} habilitada para edición comercial.`);
+                setTimeout(() => setMensajeFeedback(null), 3000);
+              }}
+              className="px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-700 hover:bg-slate-200 transition-colors cursor-pointer"
             >
               Editar ficha
             </button>
@@ -284,7 +295,7 @@ export function ProveedorDrawerDetalle({
             <button
               type="button"
               onClick={() => onCrearOC?.(proveedor)}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white shadow-xs transition-colors"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white shadow-xs transition-colors cursor-pointer"
             >
               <ShoppingCart className="w-3.5 h-3.5" />
               <span>Crear Orden de Compra</span>

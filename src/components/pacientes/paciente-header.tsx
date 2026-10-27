@@ -15,9 +15,16 @@ import {
 interface PacienteHeaderProps {
   readonly paciente: PacienteDetalle;
   readonly onEditar?: () => void;
+  readonly onNuevoTurno?: () => void;
+  readonly onImprimir?: () => void;
 }
 
-export function PacienteHeader({ paciente, onEditar }: PacienteHeaderProps) {
+export function PacienteHeader({
+  paciente,
+  onEditar,
+  onNuevoTurno,
+  onImprimir,
+}: PacienteHeaderProps) {
   return (
     <div className="bg-white rounded-2xl border border-slate-200/80 p-5 md:p-6 shadow-xs">
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
@@ -90,6 +97,7 @@ export function PacienteHeader({ paciente, onEditar }: PacienteHeaderProps) {
 
           <button
             type="button"
+            onClick={onNuevoTurno}
             className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-sky-600 text-white hover:bg-sky-700 shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-sky-500/30"
           >
             <PlusCircle className="w-3.5 h-3.5" />
@@ -98,6 +106,7 @@ export function PacienteHeader({ paciente, onEditar }: PacienteHeaderProps) {
 
           <button
             type="button"
+            onClick={onImprimir ?? (() => window.print())}
             className="p-2 rounded-xl border border-slate-200 text-slate-500 hover:text-slate-700 hover:bg-slate-50 transition-colors"
             title="Imprimir resumen de ficha"
           >

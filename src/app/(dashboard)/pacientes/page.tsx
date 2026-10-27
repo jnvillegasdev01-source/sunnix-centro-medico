@@ -1,8 +1,10 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { MOCK_PACIENTES } from "@/lib/data/mock-pacientes";
+import { PacienteDetalle } from "@/types/pacientes";
+import { NuevoPacienteModal } from "@/components/pacientes/nuevo-paciente-modal";
 import {
   Users,
   Search,
@@ -15,11 +17,39 @@ import {
   Award,
 } from "lucide-react";
 
+const STORAGE_KEY = "sunnix_pacientes_list";
+
 export default function PacientesListPage() {
+  const [pacientes, setPacientes] = useState<PacienteDetalle[]>(() => [...MOCK_PACIENTES]);
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [filterPlan, setFilterPlan] = useState<string>("todos");
+  const [isNuevoModalOpen, setIsNuevoModalOpen] = useState<boolean>(false);
 
-  const filteredPacientes = MOCK_PACIENTES.filter((paciente) => {
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setPacientes(parsed);
+        }
+      }
+    } catch {
+      // Ignore localStorage errors
+    }
+  }, []);
+
+  const handleCrearPaciente = (nuevo: PacienteDetalle) => {
+    const updated = [nuevo, ...pacientes];
+    setPacientes(updated);
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+    } catch {
+      // Ignore localStorage errors
+    }
+  };
+
+  const filteredPacientes = pacientes.filter((paciente) => {
     const matchesSearch =
       paciente.nombreCompleto
         .toLowerCase()
@@ -62,7 +92,8 @@ export default function PacientesListPage() {
 
         <button
           type="button"
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold bg-sky-600 text-white hover:bg-sky-700 shadow-sm transition-all shrink-0"
+          onClick={() => setIsNuevoModalOpen(true)}
+          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold bg-sky-600 text-white hover:bg-sky-700 shadow-sm transition-all shrink-0 cursor-pointer"
         >
           <Plus className="w-4 h-4" />
           <span>Nuevo Paciente</span>
@@ -237,6 +268,13 @@ export default function PacientesListPage() {
           </table>
         </div>
       </div>
+
+      {/* Modal de Alta de Paciente */}
+      <NuevoPacienteModal
+        isOpen={isNuevoModalOpen}
+        onClose={() => setIsNuevoModalOpen(false)}
+        onSave={handleCrearPaciente}
+      />
     </div>
   );
 }

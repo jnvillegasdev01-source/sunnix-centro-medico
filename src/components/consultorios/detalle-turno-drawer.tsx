@@ -26,6 +26,8 @@ export function DetalleTurnoDrawer({
   isOpen,
   onClose,
 }: DetalleTurnoDrawerProps) {
+  const [checkInDone, setCheckInDone] = React.useState<boolean>(false);
+
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       if (e.key === "Escape") {
@@ -233,15 +235,24 @@ export function DetalleTurnoDrawer({
 
           {/* Footer Actions */}
           <div className="p-5 border-t border-slate-100 bg-slate-50 flex flex-col gap-2">
+            {checkInDone && (
+              <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-xs font-semibold flex items-center gap-2 animate-in fade-in">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>Check-in confirmado. Notificando a consultorio...</span>
+              </div>
+            )}
             {!isBloqueado ? (
               <>
                 <button
                   type="button"
                   onClick={() => {
-                    alert(`Iniciando check-in para ${slot.pacienteNombre}...`);
-                    onClose();
+                    setCheckInDone(true);
+                    setTimeout(() => {
+                      setCheckInDone(false);
+                      onClose();
+                    }, 800);
                   }}
-                  className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm transition-all"
+                  className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm transition-all cursor-pointer"
                 >
                   <CheckCircle2 className="w-4 h-4" />
                   <span>Check-in / Iniciar Atención</span>

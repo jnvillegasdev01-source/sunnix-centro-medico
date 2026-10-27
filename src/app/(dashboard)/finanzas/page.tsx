@@ -5,6 +5,7 @@ import { TesoreriaKpis } from "@/components/finanzas/tesoreria-kpis";
 import { CuentasBancosWidget } from "@/components/finanzas/cuentas-bancos-widget";
 import { GraficosFinanzas } from "@/components/finanzas/graficos-finanzas";
 import { TablasMovimientosPanel } from "@/components/finanzas/tablas-movimientos-panel";
+import { NuevoMovimientoModal } from "@/components/finanzas/nuevo-movimiento-modal";
 import {
   MOCK_TESORERIA_KPIS,
   MOCK_CUENTAS_BANCOS,
@@ -22,17 +23,40 @@ import {
 
 export default function FinanzasPage() {
   const [periodo] = useState<string>("Mayo 2025");
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
 
   const handleNuevoMovimiento = () => {
-    alert("Abriendo formulario para asentar nuevo movimiento en tesorería (ingreso o egreso).");
+    setIsModalOpen(true);
   };
 
   const handleTransferir = () => {
-    alert("Abriendo modal de transferencia interbancaria / movimiento de caja.");
+    setIsModalOpen(true);
   };
 
   const handleConciliar = () => {
-    alert("Iniciando conciliación bancaria con extracto oficial.");
+    // Conciliation status
+  };
+
+  const handleExportarBalance = () => {
+    const content = `SUNNIX CENTRO MÉDICO - BALANCE DE TESORERÍA (${periodo})
+=====================================================
+Saldo Disponible en Cuentas: $ 24.580.000 ARS
+Ingresos Operativos del Mes: $ 18.420.000 ARS
+Egresos y Compras del Mes: $ 11.230.000 ARS
+Superávit Neto Operativo: $ 7.190.000 ARS
+Fecha de Auditoría: ${new Date().toLocaleDateString("es-AR")}
+Auditoría Oficial: Gerencia de Administración y Finanzas Sunnix
+=====================================================`;
+
+    const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `Balance_Tesoreria_Sunnix_${periodo.replace(" ", "_")}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -66,8 +90,8 @@ export default function FinanzasPage() {
 
           <button
             type="button"
-            onClick={() => alert("Exportando balance mensual de tesorería en PDF...")}
-            className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-colors"
+            onClick={handleExportarBalance}
+            className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
             title="Exportar balance"
           >
             <Download className="w-4 h-4" />
@@ -115,11 +139,16 @@ export default function FinanzasPage() {
         <TablasMovimientosPanel
           ingresos={MOCK_MOVIMIENTOS_INGRESOS}
           egresos={MOCK_MOVIMIENTOS_EGRESOS}
-          onVerMovimiento={(mov) =>
-            alert(`Visualizando comprobante de ${mov.concepto} por $${mov.monto.toLocaleString("es-AR")}`)
-          }
+          onVerMovimiento={() => {}}
         />
       </section>
+
+      {/* Modal de Nuevo Movimiento */}
+      <NuevoMovimientoModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSave={() => {}}
+      />
     </div>
   );
 }

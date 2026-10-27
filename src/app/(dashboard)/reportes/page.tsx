@@ -114,8 +114,29 @@ export default function ReportesPage() {
     URL.revokeObjectURL(url);
   };
 
+  const handleDescargarPaquete = () => {
+    const content = `SUNNIX CENTRO MÉDICO - PAQUETE EJECUTIVO CONSOLIDADO
+=====================================================
+Período: ${periodoTexto}
+Ocupación de Consultorios: 78.4%
+Total Pacientes Atendidos: 1.420
+Recaudación y Cobranzas: $ 28.940.000 ARS
+Membresías Activas: 385 socios
+Auditoría Médica y de Gestión: Homologada
+=====================================================`;
+    const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `Reportes_Ejecutivos_Sunnix_${periodoTexto.replace(" ", "_")}.txt`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   return (
-    <div className="space-y-6 pb-12">
+    <div className="space-y-6 pb-12 animate-in fade-in duration-200">
       {/* Header del Módulo con Breadcrumb y Badges */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
@@ -140,8 +161,8 @@ export default function ReportesPage() {
 
           <button
             type="button"
-            onClick={() => alert("Generando compilado completo de reportes mensuales en formato ZIP...")}
-            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-semibold shadow-xs transition-colors"
+            onClick={handleDescargarPaquete}
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-semibold shadow-xs transition-colors cursor-pointer"
           >
             <DownloadCloud className="w-3.5 h-3.5" />
             <span>Descargar paquete</span>
